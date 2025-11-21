@@ -89,6 +89,9 @@ class HTMLParser(BaseParser):
         """
         检测美股报表单位
 
+        优先检测"Amounts in"相关描述（用于金额单位）
+        避免被"shares in thousands"等股数单位干扰
+
         Args:
             text: 文本内容
 
@@ -97,16 +100,50 @@ class HTMLParser(BaseParser):
         """
         text_lower = text.lower()
 
-        # 美股常见单位
-        if 'in thousands' in text_lower or '(in thousands)' in text_lower:
+        # 优先检查明确的金额单位说明（"Amounts in..."）
+        # 这些通常出现在表格底部或页脚
+        if 'amounts in billions' in text_lower:
+            return 1_000_000_000
+        elif 'amounts in millions' in text_lower:
+            return 1_000_000
+        elif 'amounts in thousands' in text_lower:
             return 1_000
+
+        # 检查常见的单位标记（按从大到小的顺序，优先匹配大单位）
+        # 美股10-K通常用millions，偶尔用billions
+        if 'in billions' in text_lower or '(in billions)' in text_lower:
+            return 1_000_000_000
         elif 'in millions' in text_lower or '(in millions)' in text_lower:
             return 1_000_000
-        elif 'in billions' in text_lower or '(in billions)' in text_lower:
-            return 1_000_000_000
-        else:
-            # 默认假设是千为单位（SEC最常见）
+        elif 'in thousands' in text_lower or '(in thousands)' in text_lower:
+            # 注意：如果只找到thousands，可能是股数单位
+            # 但如果同时存在财务数据，默认认为是金额单位
             return 1_000
+        else:
+            # 默认假设是百万为单位（美股10-K最常见）
+            return 1_000_000
+
+    def _normalize_text(self, text: str) -> str:
+        """
+        规范化文本（用于关键词匹配）
+
+        去除标点符号，统一为小写，方便关键词匹配
+
+        Args:
+            text: 原始文本
+
+        Returns:
+            规范化后的文本
+        """
+        # 转小写
+        text = text.lower()
+        # 移除常见标点符号（但保留空格和连字符）
+        # 主要是去除撇号 ', 引号 ", 括号 (), 冒号 : 等
+        text = text.replace("'", "").replace('"', '')
+        text = text.replace('(', '').replace(')', '')
+        text = text.replace(':', '')
+        text = text.replace(',', '')
+        return text.strip()
 
     def _identify_table_type_html(self, table) -> Optional[str]:
         """
@@ -169,24 +206,47 @@ class HTMLParser(BaseParser):
         result = {}
 
         # 关键指标映射（英文 -> 字段名）
+        # 注意：顺序很重要！更具体的关键词应该放在前面
         keyword_map = {
-            'revenue': 'revenue',
+            # 营收（Revenue/Sales）
+            'total net sales': 'revenue',  # Apple用的格式
             'total revenue': 'revenue',
             'net sales': 'revenue',
+            'revenue': 'revenue',
+            # 营业成本（Cost of Sales/COGS）
+            'total cost of sales': 'operating_cost',  # Apple用的格式
+            'cost of sales': 'operating_cost',
             'cost of revenue': 'operating_cost',
             'cost of goods sold': 'operating_cost',
             'cogs': 'operating_cost',
+            # 毛利（Gross Margin/Profit）
+            'gross margin': 'gross_profit',
+            'gross profit': 'gross_profit',
+            # 营业利润（Operating Income）
             'operating income': 'operating_profit',
             'operating profit': 'operating_profit',
+            # 税前利润（Pretax Income）
+            'income before provision for income taxes': 'total_profit',  # Apple格式
             'income before tax': 'total_profit',
             'pretax income': 'total_profit',
+            # 净利润（Net Income）
             'net income': 'net_profit',
             'net earnings': 'net_profit',
+            # 税费（Tax Expense）
+            'provision for income taxes': 'tax_expense',  # Apple格式
+            'income tax expense': 'tax_expense',
             'income tax': 'tax_expense',
             'tax expense': 'tax_expense',
-            'selling, general': 'selling_expense',  # Selling, General & Administrative
+            # 销售及管理费用（SG&A）
+            'selling, general and administrative': 'selling_expense',
+            'selling, general': 'selling_expense',
+            # 研发费用（R&D）
             'research and development': 'rd_expense',
+            'r&d expense': 'rd_expense',
             'r&d': 'rd_expense',
+            # 每股收益（EPS）
+            'diluted': 'eps_diluted',  # 稀释每股收益
+            'basic': 'eps_basic',      # 基本每股收益
         }
 
         # 提取行
@@ -197,8 +257,8 @@ class HTMLParser(BaseParser):
             if len(cells) < 2:
                 continue
 
-            # 第一列是指标名
-            indicator_text = cells[0].get_text().strip().lower()
+            # 第一列是指标名（规范化处理，去除标点）
+            indicator_text = self._normalize_text(cells[0].get_text())
 
             # 查找匹配的关键词
             for keyword, field_name in keyword_map.items():
@@ -270,7 +330,16 @@ class HTMLParser(BaseParser):
             if len(cells) < 2:
                 continue
 
-            indicator_text = cells[0].get_text().strip().lower()
+            # 规范化处理（去除标点）
+            indicator_text = self._normalize_text(cells[0].get_text())
+
+            # 跳过复合行（包含"and"的通常是平衡行，如"total liabilities and equity"）
+            # 但"cash and cash equivalents"等是例外，所以只跳过total开头+and的组合
+            if indicator_text.startswith('total') and ' and ' in indicator_text:
+                # 检查是否是平衡行（如"total liabilities and equity"）
+                if ('liabilities and' in indicator_text or
+                    'assets and' in indicator_text):
+                    continue
 
             for keyword, field_name in keyword_map.items():
                 if keyword in indicator_text:
@@ -319,7 +388,8 @@ class HTMLParser(BaseParser):
             if len(cells) < 2:
                 continue
 
-            indicator_text = cells[0].get_text().strip().lower()
+            # 规范化处理（去除标点）
+            indicator_text = self._normalize_text(cells[0].get_text())
 
             for keyword, field_name in keyword_map.items():
                 if keyword in indicator_text:
