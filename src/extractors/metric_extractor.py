@@ -293,11 +293,11 @@ class MetricExtractor:
         # 应付账款周转率（如果有应付和成本数据）
         if metrics.get('operating_cost') and metrics.get('accounts_payable'):
             if metrics['accounts_payable'] != 0:
-                payable_turnover = metrics['operating_cost'] / metrics['accounts_payable']
+                payable_turnover = float(metrics['operating_cost']) / float(metrics['accounts_payable'])
                 payable_days = 365 / payable_turnover
 
         # 计算CCC
-        if inventory_days and receivable_days and payable_days:
+        if inventory_days is not None and receivable_days is not None and payable_days is not None:
             metrics['cash_conversion_cycle'] = float(
                 inventory_days + receivable_days - payable_days
             )

@@ -155,29 +155,29 @@ class MetricValidator:
 
         # 2. 流动资产 <= 总资产
         if metrics.get('current_assets') and metrics.get('total_assets'):
-            if metrics['current_assets'] > metrics['total_assets'] * 1.01:  # 允许1%误差
+            if float(metrics['current_assets']) > float(metrics['total_assets']) * 1.01:  # 允许1%误差
                 errors.append(
                     f"流动资产({metrics['current_assets']})超过总资产({metrics['total_assets']})"
                 )
 
         # 3. 流动负债 <= 总负债
         if metrics.get('current_liabilities') and metrics.get('total_liabilities'):
-            if metrics['current_liabilities'] > metrics['total_liabilities'] * 1.01:
+            if float(metrics['current_liabilities']) > float(metrics['total_liabilities']) * 1.01:
                 errors.append(
                     f"流动负债({metrics['current_liabilities']})超过总负债({metrics['total_liabilities']})"
                 )
 
         # 4. 营业成本 <= 营业收入（通常）
         if metrics.get('operating_cost') and metrics.get('revenue'):
-            if metrics['operating_cost'] > metrics['revenue'] * 1.5:  # 允许一定范围
+            if float(metrics['operating_cost']) > float(metrics['revenue']) * 1.5:  # 允许一定范围
                 errors.append(
                     f"营业成本({metrics['operating_cost']})远超营业收入({metrics['revenue']})"
                 )
 
         # 5. 毛利率 = (营收 - 成本) / 营收
         if all(metrics.get(f) is not None for f in ['revenue', 'operating_cost', 'gross_margin']):
-            expected_margin = (metrics['revenue'] - metrics['operating_cost']) / metrics['revenue']
-            actual_margin = metrics['gross_margin']
+            expected_margin = float(metrics['revenue'] - metrics['operating_cost']) / float(metrics['revenue'])
+            actual_margin = float(metrics['gross_margin'])
 
             if abs(expected_margin - actual_margin) > 0.01:
                 errors.append(
