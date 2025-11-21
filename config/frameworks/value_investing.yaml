@@ -1,0 +1,313 @@
+# 价值投资框架配置
+# 设计理念：巴菲特风格，关注稳健性、盈利能力、护城河
+
+name: "价值投资框架"
+description: "适合寻找被低估的优质企业，长期持有"
+style: "巴菲特风格"
+version: "1.0"
+
+# 总分100分
+categories:
+  # 1. 盈利能力（40分）
+  - name: "盈利能力"
+    description: "公司能否持续赚钱"
+    weight: 40
+    metrics:
+      - name: "roe"
+        display_name: "ROE（净资产收益率）"
+        weight: 15
+        unit: "%"
+        rules:
+          - condition: "value >= 0.20"
+            score: 15
+            comment: "优秀（≥20%）"
+          - condition: "value >= 0.15"
+            score: 12
+            comment: "良好（15-20%）"
+          - condition: "value >= 0.10"
+            score: 8
+            comment: "及格（10-15%）"
+          - condition: "value >= 0.05"
+            score: 5
+            comment: "较低（5-10%）"
+          - default: 0
+            comment: "不及格（<5%）"
+
+      - name: "gross_margin"
+        display_name: "毛利率"
+        weight: 10
+        unit: "%"
+        rules:
+          - condition: "value >= 0.40"
+            score: 10
+            comment: "优秀（≥40%）"
+          - condition: "value >= 0.30"
+            score: 8
+            comment: "良好（30-40%）"
+          - condition: "value >= 0.20"
+            score: 5
+            comment: "及格（20-30%）"
+          - condition: "value >= 0.10"
+            score: 3
+            comment: "较低（10-20%）"
+          - default: 0
+            comment: "不及格（<10%）"
+
+      - name: "net_margin"
+        display_name: "净利率"
+        weight: 10
+        unit: "%"
+        rules:
+          - condition: "value >= 0.20"
+            score: 10
+            comment: "优秀（≥20%）"
+          - condition: "value >= 0.15"
+            score: 8
+            comment: "良好（15-20%）"
+          - condition: "value >= 0.10"
+            score: 5
+            comment: "及格（10-15%）"
+          - condition: "value >= 0.05"
+            score: 3
+            comment: "较低（5-10%）"
+          - default: 0
+            comment: "不及格（<5%）"
+
+      - name: "revenue_growth_rate"
+        display_name: "营收增长率"
+        weight: 5
+        unit: "%"
+        rules:
+          - condition: "value >= 0.15"
+            score: 5
+            comment: "优秀（≥15%）"
+          - condition: "value >= 0.10"
+            score: 4
+            comment: "良好（10-15%）"
+          - condition: "value >= 0.05"
+            score: 3
+            comment: "及格（5-10%）"
+          - condition: "value >= 0"
+            score: 2
+            comment: "较低（0-5%）"
+          - default: 0
+            comment: "负增长"
+
+  # 2. 财务稳健（30分）
+  - name: "财务稳健"
+    description: "资产负债健康吗"
+    weight: 30
+    metrics:
+      - name: "debt_to_asset_ratio"
+        display_name: "资产负债率"
+        weight: 15
+        unit: "%"
+        reverse: true  # 越低越好
+        rules:
+          - condition: "value < 0.30"
+            score: 15
+            comment: "优秀（<30%）"
+          - condition: "value < 0.50"
+            score: 12
+            comment: "良好（30-50%）"
+          - condition: "value < 0.70"
+            score: 8
+            comment: "及格（50-70%）"
+          - condition: "value < 1.00"
+            score: 4
+            comment: "较高（70-100%）"
+          - default: 0
+            comment: "危险（>100%）"
+
+      - name: "current_ratio"
+        display_name: "流动比率"
+        weight: 8
+        unit: ""
+        rules:
+          - condition: "value >= 2.0"
+            score: 8
+            comment: "优秀（≥2）"
+          - condition: "value >= 1.5"
+            score: 6
+            comment: "良好（1.5-2）"
+          - condition: "value >= 1.0"
+            score: 4
+            comment: "及格（1-1.5）"
+          - condition: "value >= 0.5"
+            score: 2
+            comment: "较低（0.5-1）"
+          - default: 0
+            comment: "危险（<0.5）"
+
+      - name: "operating_cashflow_ratio"
+        display_name: "经营现金流/净利润"
+        weight: 7
+        unit: ""
+        rules:
+          - condition: "value >= 1.2"
+            score: 7
+            comment: "优秀（≥1.2）"
+          - condition: "value >= 1.0"
+            score: 5
+            comment: "良好（1.0-1.2）"
+          - condition: "value >= 0.8"
+            score: 3
+            comment: "及格（0.8-1.0）"
+          - condition: "value >= 0.5"
+            score: 1
+            comment: "较低（0.5-0.8）"
+          - default: 0
+            comment: "危险（<0.5）"
+
+  # 3. 护城河（20分）
+  - name: "护城河"
+    description: "竞争优势明显吗"
+    weight: 20
+    metrics:
+      - name: "roe_consistency"
+        display_name: "ROE连续性"
+        weight: 8
+        unit: "年"
+        description: "连续多少年ROE>15%"
+        rules:
+          - condition: "value >= 3"
+            score: 8
+            comment: "优秀（连续3年）"
+          - condition: "value >= 2"
+            score: 6
+            comment: "良好（连续2年）"
+          - condition: "value >= 1"
+            score: 4
+            comment: "及格（连续1年）"
+          - default: 0
+            comment: "不稳定"
+
+      - name: "gross_margin_stability"
+        display_name: "毛利率稳定性"
+        weight: 7
+        unit: "%"
+        description: "近3年毛利率波动幅度"
+        reverse: true  # 波动越小越好
+        rules:
+          - condition: "value < 0.05"
+            score: 7
+            comment: "优秀（波动<5%）"
+          - condition: "value < 0.10"
+            score: 5
+            comment: "良好（波动5-10%）"
+          - condition: "value < 0.20"
+            score: 3
+            comment: "及格（波动10-20%）"
+          - default: 0
+            comment: "波动大（>20%）"
+
+      - name: "market_position"
+        display_name: "市场地位"
+        weight: 5
+        unit: ""
+        description: "行业地位（需人工标注）"
+        rules:
+          - condition: "value == 'leader'"
+            score: 5
+            comment: "行业龙头"
+          - condition: "value == 'top3'"
+            score: 3
+            comment: "行业前三"
+          - default: 0
+            comment: "其他"
+
+  # 4. 估值（10分）
+  - name: "估值"
+    description: "价格合理吗"
+    weight: 10
+    metrics:
+      - name: "pe_ratio"
+        display_name: "PE（市盈率）"
+        weight: 5
+        unit: ""
+        reverse: true  # 越低越好
+        rules:
+          - condition: "value > 0 and value < 10"
+            score: 5
+            comment: "低估（<10）"
+          - condition: "value < 15"
+            score: 4
+            comment: "合理（10-15）"
+          - condition: "value < 25"
+            score: 3
+            comment: "适中（15-25）"
+          - condition: "value < 40"
+            score: 1
+            comment: "偏高（25-40）"
+          - default: 0
+            comment: "高估（>40或负数）"
+
+      - name: "pb_ratio"
+        display_name: "PB（市净率）"
+        weight: 5
+        unit: ""
+        reverse: true  # 越低越好
+        rules:
+          - condition: "value > 0 and value < 1"
+            score: 5
+            comment: "低估（<1）"
+          - condition: "value < 2"
+            score: 4
+            comment: "合理（1-2）"
+          - condition: "value < 3"
+            score: 3
+            comment: "适中（2-3）"
+          - condition: "value < 5"
+            score: 1
+            comment: "偏高（3-5）"
+          - default: 0
+            comment: "高估（>5或负数）"
+
+# 投资建议规则
+recommendations:
+  - score_range: [90, 100]
+    action: "强烈买入"
+    reasoning: "盈利能力优秀，财务稳健，具有明显护城河，且估值合理。是典型的优质价值股。"
+    risk_level: "低"
+
+  - score_range: [80, 89]
+    action: "买入"
+    reasoning: "各维度表现均衡，基本面良好。适合长期持有。"
+    risk_level: "中低"
+
+  - score_range: [70, 79]
+    action: "持有/观察"
+    reasoning: "有1-2个维度表现突出，但存在一些不足。建议持续关注，等待更好时机。"
+    risk_level: "中"
+
+  - score_range: [60, 69]
+    action: "谨慎"
+    reasoning: "有明显短板，投资风险较大。建议深入研究后再决策。"
+    risk_level: "中高"
+
+  - score_range: [0, 59]
+    action: "不推荐"
+    reasoning: "多个维度不达标，不符合价值投资标准。"
+    risk_level: "高"
+
+# 风险提示规则
+risk_alerts:
+  - condition: "debt_to_asset_ratio > 0.70"
+    level: "高"
+    message: "资产负债率过高（>70%），财务风险较大"
+
+  - condition: "roe < 0.05"
+    level: "高"
+    message: "ROE过低（<5%），盈利能力不足"
+
+  - condition: "operating_cashflow_ratio < 0.5"
+    level: "高"
+    message: "经营现金流远低于净利润，盈利质量存疑"
+
+  - condition: "revenue_growth_rate < 0"
+    level: "中"
+    message: "营收负增长，业务可能萎缩"
+
+  - condition: "pe_ratio > 40"
+    level: "中"
+    message: "PE过高（>40），估值偏贵"

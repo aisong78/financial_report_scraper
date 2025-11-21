@@ -1,0 +1,256 @@
+# 成长投资框架配置
+# 设计理念：彼得·林奇风格，关注增长性、扩张能力、行业前景
+
+name: "成长投资框架"
+description: "适合寻找高成长公司，在成长期持有"
+style: "彼得·林奇风格"
+version: "1.0"
+
+# 总分100分
+categories:
+  # 1. 成长性（40分）
+  - name: "成长性"
+    description: "增长速度快吗"
+    weight: 40
+    metrics:
+      - name: "revenue_growth_rate"
+        display_name: "营收增长率"
+        weight: 15
+        unit: "%"
+        rules:
+          - condition: "value >= 0.30"
+            score: 15
+            comment: "优秀（≥30%）"
+          - condition: "value >= 0.20"
+            score: 12
+            comment: "良好（20-30%）"
+          - condition: "value >= 0.15"
+            score: 9
+            comment: "及格（15-20%）"
+          - condition: "value >= 0.10"
+            score: 6
+            comment: "较低（10-15%）"
+          - default: 0
+            comment: "不及格（<10%）"
+
+      - name: "profit_growth_rate"
+        display_name: "利润增长率"
+        weight: 15
+        unit: "%"
+        rules:
+          - condition: "value >= 0.30"
+            score: 15
+            comment: "优秀（≥30%）"
+          - condition: "value >= 0.20"
+            score: 12
+            comment: "良好（20-30%）"
+          - condition: "value >= 0.15"
+            score: 9
+            comment: "及格（15-20%）"
+          - condition: "value >= 0.10"
+            score: 6
+            comment: "较低（10-15%）"
+          - default: 0
+            comment: "不及格（<10%）"
+
+      - name: "growth_acceleration"
+        display_name: "增长加速度"
+        weight: 10
+        unit: ""
+        description: "增长趋势：accelerating/stable/slowing"
+        rules:
+          - condition: "value == 'accelerating'"
+            score: 10
+            comment: "逐季加速"
+          - condition: "value == 'stable'"
+            score: 7
+            comment: "稳定增长"
+          - condition: "value == 'slowing'"
+            score: 3
+            comment: "增速放缓"
+          - default: 0
+            comment: "负增长"
+
+  # 2. 扩张能力（30分）
+  - name: "扩张能力"
+    description: "能持续扩张吗"
+    weight: 30
+    metrics:
+      - name: "asset_turnover"
+        display_name: "资产周转率"
+        weight: 10
+        unit: ""
+        rules:
+          - condition: "value > 2.0"
+            score: 10
+            comment: "优秀（>2）"
+          - condition: "value >= 1.5"
+            score: 8
+            comment: "良好（1.5-2）"
+          - condition: "value >= 1.0"
+            score: 5
+            comment: "及格（1-1.5）"
+          - condition: "value >= 0.5"
+            score: 3
+            comment: "较低（0.5-1）"
+          - default: 0
+            comment: "不及格（<0.5）"
+
+      - name: "roe"
+        display_name: "ROE（净资产收益率）"
+        weight: 10
+        unit: "%"
+        rules:
+          - condition: "value > 0.20"
+            score: 10
+            comment: "优秀（>20%）"
+          - condition: "value >= 0.15"
+            score: 8
+            comment: "良好（15-20%）"
+          - condition: "value >= 0.10"
+            score: 5
+            comment: "及格（10-15%）"
+          - condition: "value >= 0.05"
+            score: 3
+            comment: "较低（5-10%）"
+          - default: 0
+            comment: "不及格（<5%）"
+
+      - name: "capex_growth_rate"
+        display_name: "资本开支增长率"
+        weight: 10
+        unit: "%"
+        description: "合理的资本开支增长"
+        rules:
+          - condition: "value >= 0.10 and value <= 0.30"
+            score: 10
+            comment: "优秀（10-30%）"
+          - condition: "value >= 0.05 and value < 0.10"
+            score: 7
+            comment: "良好（5-10%）"
+          - condition: "value >= 0 and value < 0.05"
+            score: 4
+            comment: "较低（0-5%）"
+          - condition: "value > 0.30"
+            score: 5
+            comment: "过度扩张（>30%）"
+          - default: 0
+            comment: "负增长"
+
+  # 3. 盈利质量（20分）
+  - name: "盈利质量"
+    description: "盈利能力如何"
+    weight: 20
+    metrics:
+      - name: "gross_margin"
+        display_name: "毛利率"
+        weight: 10
+        unit: "%"
+        rules:
+          - condition: "value >= 0.30"
+            score: 10
+            comment: "优秀（≥30%）"
+          - condition: "value >= 0.20"
+            score: 7
+            comment: "良好（20-30%）"
+          - condition: "value >= 0.10"
+            score: 4
+            comment: "及格（10-20%）"
+          - default: 0
+            comment: "较低（<10%）"
+
+      - name: "operating_cashflow_ratio"
+        display_name: "经营现金流/净利润"
+        weight: 10
+        unit: ""
+        rules:
+          - condition: "value >= 0.8"
+            score: 10
+            comment: "优秀（≥0.8）"
+          - condition: "value >= 0.6"
+            score: 7
+            comment: "良好（0.6-0.8）"
+          - condition: "value >= 0.4"
+            score: 4
+            comment: "及格（0.4-0.6）"
+          - default: 0
+            comment: "较低（<0.4）"
+
+  # 4. 估值合理性（10分）
+  - name: "估值合理性"
+    description: "PEG合理吗"
+    weight: 10
+    metrics:
+      - name: "peg_ratio"
+        display_name: "PEG（市盈率/增长率）"
+        weight: 10
+        unit: ""
+        reverse: true  # 越低越好
+        rules:
+          - condition: "value > 0 and value < 0.5"
+            score: 10
+            comment: "低估（<0.5）"
+          - condition: "value < 1.0"
+            score: 8
+            comment: "合理（0.5-1）"
+          - condition: "value < 1.5"
+            score: 5
+            comment: "适中（1-1.5）"
+          - condition: "value < 2.0"
+            score: 3
+            comment: "偏高（1.5-2）"
+          - default: 0
+            comment: "高估（>2或负数）"
+
+# 投资建议规则
+recommendations:
+  - score_range: [90, 100]
+    action: "强烈买入"
+    reasoning: "高增长、高盈利质量、估值合理。是典型的优质成长股。"
+    risk_level: "中低"
+
+  - score_range: [80, 89]
+    action: "买入"
+    reasoning: "增长强劲，盈利质量良好。适合成长期持有。"
+    risk_level: "中"
+
+  - score_range: [70, 79]
+    action: "持有/观察"
+    reasoning: "增长良好但估值偏高，或增速放缓。建议等待回调机会。"
+    risk_level: "中"
+
+  - score_range: [60, 69]
+    action: "谨慎"
+    reasoning: "增长放缓或盈利质量下降。建议谨慎对待。"
+    risk_level: "中高"
+
+  - score_range: [0, 59]
+    action: "不推荐"
+    reasoning: "增长停滞或负增长。不符合成长投资标准。"
+    risk_level: "高"
+
+# 风险提示规则
+risk_alerts:
+  - condition: "revenue_growth_rate < 0"
+    level: "高"
+    message: "营收负增长，成长故事破裂"
+
+  - condition: "profit_growth_rate < 0"
+    level: "高"
+    message: "利润负增长，盈利能力下降"
+
+  - condition: "operating_cashflow_ratio < 0.4"
+    level: "高"
+    message: "经营现金流远低于净利润，盈利质量存疑"
+
+  - condition: "peg_ratio > 2"
+    level: "中"
+    message: "PEG过高（>2），估值偏贵"
+
+  - condition: "growth_acceleration == 'slowing'"
+    level: "中"
+    message: "增速放缓，成长动能减弱"
+
+  - condition: "capex_growth_rate > 0.30"
+    level: "中"
+    message: "资本开支增长过快（>30%），可能过度扩张"
