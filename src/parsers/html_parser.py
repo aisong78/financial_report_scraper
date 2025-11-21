@@ -206,48 +206,70 @@ class HTMLParser(BaseParser):
         result = {}
 
         # 关键指标映射（英文 -> 字段名）
-        # 注意：顺序很重要！更具体的关键词应该放在前面
-        keyword_map = {
-            # 营收（Revenue/Sales）
-            'total net sales': 'revenue',  # Apple用的格式
-            'total revenue': 'revenue',
-            'net sales': 'revenue',
-            'revenue': 'revenue',
-            # 营业成本（Cost of Sales/COGS）
-            'total cost of sales': 'operating_cost',  # Apple用的格式
-            'cost of sales': 'operating_cost',
-            'cost of revenue': 'operating_cost',
-            'cost of goods sold': 'operating_cost',
-            'cogs': 'operating_cost',
+        # 注意：顺序很重要！更具体的关键词应该放在前面，避免误匹配
+        # 格式：(关键词, 字段名, 排除关键词列表)
+        keyword_map = [
+            # 营业成本（Cost）- 必须放在revenue之前检查！
+            ('total cost of revenue', 'operating_cost', []),
+            ('total cost of sales', 'operating_cost', []),
+            ('total automotive cost of revenue', 'operating_cost', []),  # Tesla格式
+            ('cost of revenue', 'operating_cost', []),
+            ('cost of sales', 'operating_cost', []),
+            ('cost of goods sold', 'operating_cost', []),
+            ('cogs', 'operating_cost', []),
+
+            # 营收（Revenue/Sales）- 必须排除包含"cost"的行
+            ('total net sales', 'revenue', ['cost']),
+            ('total revenue', 'revenue', ['cost']),
+            ('total automotive revenue', 'revenue', ['cost']),  # Tesla格式
+            ('net sales', 'revenue', ['cost']),
+            ('revenue', 'revenue', ['cost']),
+
             # 毛利（Gross Margin/Profit）
-            'gross margin': 'gross_profit',
-            'gross profit': 'gross_profit',
+            ('gross margin', 'gross_profit', []),
+            ('gross profit', 'gross_profit', []),
+
             # 营业利润（Operating Income）
-            'operating income': 'operating_profit',
-            'operating profit': 'operating_profit',
+            ('income from operations', 'operating_profit', []),  # Tesla/某些公司格式
+            ('operating income', 'operating_profit', []),
+            ('operating profit', 'operating_profit', []),
+
             # 税前利润（Pretax Income）
-            'income before provision for income taxes': 'total_profit',  # Apple格式
-            'income before tax': 'total_profit',
-            'pretax income': 'total_profit',
+            ('income before provision for income taxes', 'total_profit', []),  # Apple格式
+            ('income before income taxes', 'total_profit', []),  # Tesla格式
+            ('income before tax', 'total_profit', []),
+            ('pretax income', 'total_profit', []),
+
             # 净利润（Net Income）
-            'net income': 'net_profit',
-            'net earnings': 'net_profit',
+            ('net income attributable to common stockholders', 'net_profit', []),  # 最精确的
+            ('net income', 'net_profit', []),
+            ('net earnings', 'net_profit', []),
+
             # 税费（Tax Expense）
-            'provision for income taxes': 'tax_expense',  # Apple格式
-            'income tax expense': 'tax_expense',
-            'income tax': 'tax_expense',
-            'tax expense': 'tax_expense',
+            ('provision for income taxes', 'tax_expense', []),
+            ('income tax expense', 'tax_expense', []),
+            ('income tax', 'tax_expense', []),
+            ('tax expense', 'tax_expense', []),
+
             # 销售及管理费用（SG&A）
-            'selling, general and administrative': 'selling_expense',
-            'selling, general': 'selling_expense',
+            ('selling general and administrative', 'selling_expense', []),
+            ('selling, general and administrative', 'selling_expense', []),
+
             # 研发费用（R&D）
-            'research and development': 'rd_expense',
-            'r&d expense': 'rd_expense',
-            'r&d': 'rd_expense',
-            # 每股收益（EPS）
-            'diluted': 'eps_diluted',  # 稀释每股收益
-            'basic': 'eps_basic',      # 基本每股收益
-        }
+            ('research and development', 'rd_expense', []),
+            ('r&d expense', 'rd_expense', []),
+            ('r&d', 'rd_expense', []),
+
+            # 每股收益（EPS）- 使用更精确的关键词
+            ('earnings per share diluted', 'eps_diluted', []),
+            ('net income per share diluted', 'eps_diluted', []),
+            ('diluted earnings per share', 'eps_diluted', []),
+            ('diluted', 'eps_diluted', []),
+            ('earnings per share basic', 'eps_basic', []),
+            ('net income per share basic', 'eps_basic', []),
+            ('basic earnings per share', 'eps_basic', []),
+            ('basic', 'eps_basic', []),
+        ]
 
         # 提取行
         rows = table.find_all('tr')
@@ -261,8 +283,12 @@ class HTMLParser(BaseParser):
             indicator_text = self._normalize_text(cells[0].get_text())
 
             # 查找匹配的关键词
-            for keyword, field_name in keyword_map.items():
+            for keyword, field_name, exclude_keywords in keyword_map:
                 if keyword in indicator_text:
+                    # 检查排除关键词
+                    if any(exclude_kw in indicator_text for exclude_kw in exclude_keywords):
+                        continue  # 跳过包含排除关键词的行
+
                     # 尝试提取数值（通常在后面的列）
                     for cell in cells[1:]:
                         value = self.clean_value(cell.get_text())
@@ -290,41 +316,69 @@ class HTMLParser(BaseParser):
         """
         result = {}
 
-        # 关键指标映射
-        keyword_map = {
-            'total assets': 'total_assets',
-            'total current assets': 'current_assets',
-            'current assets': 'current_assets',
-            'non-current assets': 'non_current_assets',
-            'noncurrent assets': 'non_current_assets',
-            'cash and cash equivalents': 'cash_and_equivalents',
-            'cash': 'cash_and_equivalents',
-            'accounts receivable': 'accounts_receivable',
-            'receivables': 'accounts_receivable',
-            'inventory': 'inventory',
-            'inventories': 'inventory',
-            'property, plant': 'fixed_assets',  # Property, Plant & Equipment
-            'fixed assets': 'fixed_assets',
-            'intangible assets': 'intangible_assets',
-            'goodwill': 'goodwill',
-            'total liabilities': 'total_liabilities',
-            'total current liabilities': 'current_liabilities',
-            'current liabilities': 'current_liabilities',
-            'non-current liabilities': 'non_current_liabilities',
-            'noncurrent liabilities': 'non_current_liabilities',
-            'short-term debt': 'short_term_borrowing',
-            'short-term borrowings': 'short_term_borrowing',
-            'long-term debt': 'long_term_borrowing',
-            'long-term borrowings': 'long_term_borrowing',
-            'accounts payable': 'accounts_payable',
-            'payables': 'accounts_payable',
-            'total equity': 'total_equity',
-            'stockholders equity': 'total_equity',
-            'shareholders equity': 'total_equity',
-            'total stockholders': 'total_equity',
-            'common stock': 'share_capital',
-            'retained earnings': 'retained_earnings',
-        }
+        # 关键指标映射（更具体的关键词在前，避免误匹配）
+        # 格式：(关键词, 字段名, 排除关键词列表)
+        keyword_map = [
+            # 资产（Assets）
+            ('total assets', 'total_assets', []),
+            ('total current assets', 'current_assets', ['non']),  # 排除non-current
+            ('total non-current assets', 'non_current_assets', []),
+            ('total noncurrent assets', 'non_current_assets', []),
+            ('current assets', 'current_assets', ['non', 'other']),  # 排除non-current和other开头的
+            ('non-current assets', 'non_current_assets', []),
+            ('noncurrent assets', 'non_current_assets', []),
+
+            # 现金及等价物
+            ('cash and cash equivalents', 'cash_and_equivalents', []),
+            ('cash', 'cash_and_equivalents', []),
+
+            # 应收账款
+            ('accounts receivable', 'accounts_receivable', []),
+            ('receivables', 'accounts_receivable', []),
+
+            # 存货
+            ('inventory', 'inventory', []),
+            ('inventories', 'inventory', []),
+
+            # 固定资产
+            ('property plant and equipment', 'fixed_assets', []),
+            ('property, plant', 'fixed_assets', []),
+            ('fixed assets', 'fixed_assets', []),
+
+            # 无形资产
+            ('intangible assets', 'intangible_assets', []),
+            ('goodwill', 'goodwill', []),
+
+            # 负债（Liabilities）
+            ('total liabilities', 'total_liabilities', []),
+            ('total current liabilities', 'current_liabilities', ['non']),
+            ('total non-current liabilities', 'non_current_liabilities', []),
+            ('total noncurrent liabilities', 'non_current_liabilities', []),
+            ('current liabilities', 'current_liabilities', ['non']),
+            ('non-current liabilities', 'non_current_liabilities', []),
+            ('noncurrent liabilities', 'non_current_liabilities', []),
+
+            # 债务
+            ('short-term debt', 'short_term_borrowing', []),
+            ('short-term borrowings', 'short_term_borrowing', []),
+            ('long-term debt', 'long_term_borrowing', []),
+            ('long-term borrowings', 'long_term_borrowing', []),
+
+            # 应付账款
+            ('accounts payable', 'accounts_payable', []),
+            ('payables', 'accounts_payable', []),
+
+            # 股东权益（Equity）
+            ('total stockholders equity', 'total_equity', []),
+            ('total shareholders equity', 'total_equity', []),
+            ('total equity', 'total_equity', []),
+            ('stockholders equity', 'total_equity', []),
+            ('shareholders equity', 'total_equity', []),
+
+            # 股本和留存收益
+            ('common stock', 'share_capital', []),
+            ('retained earnings', 'retained_earnings', []),
+        ]
 
         # 提取行
         rows = table.find_all('tr')
@@ -345,8 +399,14 @@ class HTMLParser(BaseParser):
                     'assets and' in indicator_text):
                     continue
 
-            for keyword, field_name in keyword_map.items():
+            # 查找匹配的关键词
+            for keyword, field_name, exclude_keywords in keyword_map:
                 if keyword in indicator_text:
+                    # 检查排除关键词
+                    if any(exclude_kw in indicator_text for exclude_kw in exclude_keywords):
+                        continue  # 跳过包含排除关键词的行
+
+                    # 提取数值
                     for cell in cells[1:]:
                         value = self.clean_value(cell.get_text())
                         if value is not None:
