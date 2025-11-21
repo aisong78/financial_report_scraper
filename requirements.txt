@@ -1,4 +1,49 @@
-requests
-pandas
-akshare
-sec-edgar-downloader
+# 核心依赖
+requests>=2.31.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# 数据库
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+
+# PDF 解析
+pdfplumber>=0.10.0
+PyPDF2>=3.0.0
+
+# HTML 解析
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# 配置管理
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+
+# 财报下载
+sec-edgar-downloader>=5.0.0
+
+# AI 集成（Phase 2）
+anthropic>=0.7.0
+openai>=1.0.0
+
+# 任务调度（Phase 3）
+APScheduler>=3.10.0
+
+# 报告生成
+jinja2>=3.1.2
+markdown2>=2.4.0
+
+# 命令行工具
+click>=8.1.0
+rich>=13.0.0
+tqdm>=4.65.0
+
+# 测试
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+
+# 代码质量
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
