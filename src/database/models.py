@@ -154,6 +154,52 @@ class FinancialMetric(Base):
     rd_expense: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))
     rd_ratio: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))
 
+    # === P1 扩展指标（Phase 1 新增）===
+
+    # 损益表补充
+    operating_cost: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 营业成本
+    selling_expense: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 销售费用
+    admin_expense: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 管理费用
+    finance_expense: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 财务费用
+    tax_expense: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 所得税费用
+    total_profit: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 利润总额
+    ebitda_margin: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # EBITDA利润率
+    eps_diluted: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # 摊薄每股收益
+    bps: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # 每股净资产
+
+    # 资产负债表补充
+    non_current_assets: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 非流动资产
+    cash_and_equivalents: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 货币资金
+    accounts_receivable: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 应收账款
+    inventory: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 存货
+    fixed_assets: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 固定资产
+    intangible_assets: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 无形资产
+    goodwill: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 商誉
+    non_current_liabilities: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 非流动负债
+    short_term_borrowing: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 短期借款
+    long_term_borrowing: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 长期借款
+    accounts_payable: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 应付账款
+    share_capital: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 股本
+    retained_earnings: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 未分配利润
+
+    # 现金流补充
+    net_cash_flow: Mapped[Optional[Decimal]] = mapped_column(Numeric(20, 2))  # 现金流量净额
+    fcf_per_share: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # 每股自由现金流
+    fcf_to_revenue: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # FCF/收入比
+    ocf_to_net_profit: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # 经营现金/净利润
+
+    # 运营效率
+    asset_turnover: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # 总资产周转率
+    inventory_turnover: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # 存货周转率
+    receivable_turnover: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # 应收账款周转率
+    cash_conversion_cycle: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))  # 现金周转周期（天）
+
+    # 估值补充
+    peg_ratio: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4))  # PEG
+
+    # 预留字段（P2指标和特殊场景）
+    extra_metrics: Mapped[Optional[dict]] = mapped_column(JSON)
+
     # 元数据
     extraction_method: Mapped[Optional[str]] = mapped_column(String(50))
     confidence_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 4))
