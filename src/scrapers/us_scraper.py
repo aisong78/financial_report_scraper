@@ -26,14 +26,30 @@ class USStockScraper(BaseScraper):
         self.user_email = self.config.user_email
         if "example.com" in self.user_email:
             self.logger.warning("请配置有效的 user_email 以使用 SEC 下载功能")
-            self.downloader = None
-        else:
-            # 创建下载器
-            self.downloader = Downloader(
-                company_name="FinancialAnalyzer",
-                email_address=self.user_email,
-                download_folder=str(self.save_dir)
-            )
+
+        # 延迟初始化 downloader（只在实际下载时创建，避免测试时出错）
+        self._downloader = None
+
+    @property
+    def downloader(self):
+        """延迟初始化下载器"""
+        if self._downloader is None:
+            if "example.com" in self.user_email:
+                raise ValueError("请在配置文件中设置有效的 user_email")
+
+            try:
+                self._downloader = Downloader(
+                    company_name="FinancialAnalyzer",
+                    email_address=self.user_email,
+                    download_folder=str(self.save_dir)
+                )
+                self.logger.info("美股下载器初始化成功")
+            except Exception as e:
+                self.logger.error(f"美股下载器初始化失败: {e}")
+                self.logger.warning("这可能是因为 SEC 网站限制。如果在实际使用中仍然失败，请稍后重试。")
+                raise
+
+        return self._downloader
 
     def scrape(
         self,

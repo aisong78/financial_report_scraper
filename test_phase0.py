@@ -173,9 +173,12 @@ def test_scrapers():
         print(f"✓ 港股爬虫初始化成功")
 
         us_scraper = USStockScraper()
-        print(f"✓ 美股爬虫初始化成功")
+        print(f"✓ 美股爬虫初始化成功（延迟初始化，实际使用时才连接 SEC）")
 
-        print("\n注意：实际下载功能需要网络连接，这里不测试")
+        print("\n注意：")
+        print("  - 实际下载功能需要网络连接，这里不测试")
+        print("  - 美股爬虫使用延迟初始化，只在真正下载时才会连接 SEC 网站")
+        print("  - 如果遇到 SEC 403 错误，请稍后重试（SEC 有访问频率限制）")
 
         return True
 
