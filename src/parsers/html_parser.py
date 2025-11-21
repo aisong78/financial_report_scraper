@@ -267,7 +267,11 @@ class HTMLParser(BaseParser):
                     for cell in cells[1:]:
                         value = self.clean_value(cell.get_text())
                         if value is not None:
-                            result[field_name] = value * multiplier
+                            # EPS是"per share"值，不需要乘以单位倍数
+                            if field_name in ['eps_basic', 'eps_diluted']:
+                                result[field_name] = value
+                            else:
+                                result[field_name] = value * multiplier
                             break
                     break
 

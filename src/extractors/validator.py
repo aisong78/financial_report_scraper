@@ -109,11 +109,15 @@ class MetricValidator:
             if ratio < 0 or ratio > 10:
                 errors.append(f"流动比率超出合理范围 [0.5, 10]: {ratio}")
 
-        # ROE应在 [-1, 1] 范围（即 -100% 到 100%）
+        # ROE应在 [-2, 5] 范围（即 -200% 到 500%）
+        # 注意：高ROE（>100%）在科技巨头中很常见，因为：
+        # 1. 大量股票回购导致股东权益减少
+        # 2. 高利润率业务模式
+        # 例如：Apple ROE约150%，这是健康的高盈利表现
         if metrics.get('roe') is not None:
             roe = metrics['roe']
-            if roe < -1 or roe > 1:
-                errors.append(f"ROE超出合理范围 [-1, 1]: {roe}")
+            if roe < -2 or roe > 5:
+                errors.append(f"ROE超出合理范围 [-2, 5]: {roe:.4f} ({roe*100:.2f}%)")
 
         # 毛利率应在 [-0.5, 1] 范围
         if metrics.get('gross_margin') is not None:
@@ -143,14 +147,19 @@ class MetricValidator:
 
         # 1. 资产负债表平衡：总资产 = 总负债 + 股东权益
         if all(metrics.get(f) is not None for f in ['total_assets', 'total_liabilities', 'total_equity']):
-            assets = metrics['total_assets']
-            liabilities = metrics['total_liabilities']
-            equity = metrics['total_equity']
+            assets = float(metrics['total_assets'])
+            liabilities = float(metrics['total_liabilities'])
+            equity = float(metrics['total_equity'])
 
-            # 允许1%的误差
-            if abs(assets - (liabilities + equity)) / assets > 0.01:
+            expected = liabilities + equity
+            diff = abs(assets - expected)
+            diff_ratio = diff / assets if assets != 0 else 0
+
+            # 允许2%的误差（考虑到不同报表可能有舍入差异）
+            if diff_ratio > 0.02:
                 errors.append(
-                    f"资产负债表不平衡: 总资产={assets}, 总负债={liabilities}, 股东权益={equity}"
+                    f"资产负债表不平衡: 总资产={assets:.2f}, 负债+权益={expected:.2f}, "
+                    f"差异={diff:.2f} ({diff_ratio*100:.2f}%)"
                 )
 
         # 2. 流动资产 <= 总资产

@@ -64,7 +64,16 @@ def test_apple_10k(file_path: str):
             print(f"  营业成本:     {format_number(income.get('operating_cost'))}")
             print(f"  营业利润:     {format_number(income.get('operating_profit'))}")
             print(f"  净利润:       {format_number(income.get('net_profit'))}")
-            print(f"  EPS:          {income.get('eps', 'N/A')}")
+            # EPS显示（Basic和Diluted）
+            eps_basic = income.get('eps_basic')
+            eps_diluted = income.get('eps_diluted')
+            if eps_basic or eps_diluted:
+                eps_str = f"${eps_basic:.2f}" if eps_basic else "N/A"
+                if eps_diluted:
+                    eps_str += f" (稀释: ${eps_diluted:.2f})"
+                print(f"  EPS:          {eps_str}")
+            else:
+                print(f"  EPS:          N/A")
         else:
             print("  ⚠ 未找到利润表数据")
 
