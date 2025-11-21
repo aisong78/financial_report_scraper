@@ -1,0 +1,23 @@
+{
+    "stocks": [
+        "000001",
+        "600519",
+        "00700",
+        "01810",
+        "AAPL",
+        "TSLA"
+    ],
+    "keywords": [
+        "年度报告",
+        "半年度报告",
+        "季度报告",
+        "年报",
+        "半年报",
+        "季报",
+        "财务报告",
+        "业绩公告"
+    ],
+    "save_dir": "reports",
+    "lookback_days": 30,
+    "user_email": "sonia_ai123@gmail.com"
+}

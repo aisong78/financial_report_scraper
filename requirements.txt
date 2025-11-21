@@ -1,0 +1,4 @@
+requests
+pandas
+akshare
+sec-edgar-downloader
