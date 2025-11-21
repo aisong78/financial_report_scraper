@@ -34,7 +34,7 @@ class Stock(Base):
     currency: Mapped[str] = mapped_column(String(10), default="CNY")
     listing_date: Mapped[Optional[datetime]] = mapped_column(Date)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    extra_data: Mapped[Optional[dict]] = mapped_column(JSON)  # 元数据（避免使用保留字 metadata）
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -85,7 +85,7 @@ class FinancialReport(Base):
     is_parsed: Mapped[bool] = mapped_column(Boolean, default=False)
     parsed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     checksum: Mapped[Optional[str]] = mapped_column(String(64))
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    extra_data: Mapped[Optional[dict]] = mapped_column(JSON)  # 元数据（避免使用保留字 metadata）
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # 唯一约束

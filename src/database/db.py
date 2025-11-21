@@ -354,7 +354,11 @@ def get_stock_by_code(code: str):
     from .models import Stock
 
     with session_scope() as session:
-        return session.query(Stock).filter_by(code=code).first()
+        stock = session.query(Stock).filter_by(code=code).first()
+        if stock:
+            # 确保数据被加载（避免 DetachedInstanceError）
+            session.expunge(stock)
+        return stock
 
 
 def get_or_create_stock(code: str, name: str, market: str, **kwargs):
