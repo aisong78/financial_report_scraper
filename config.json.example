@@ -19,5 +19,11 @@
     ],
     "save_dir": "reports",
     "lookback_days": 30,
-    "user_email": "your_email@example.com"
+    "user_email": "your_email@example.com",
+
+    "_comment": "=== 多数据源配置（可选）===",
+    "preferred_source": "cninfo",
+    "enable_akshare": false,
+    "enable_tushare": false,
+    "tushare_token": ""
 }

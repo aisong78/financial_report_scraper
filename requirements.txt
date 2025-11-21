@@ -22,6 +22,10 @@ pyyaml>=6.0.0
 # 财报下载
 sec-edgar-downloader>=5.0.0
 
+# 多数据源（可选）
+# akshare>=1.14.0  # 取消注释以启用 AkShare 数据源
+# tushare>=1.2.89  # 取消注释以启用 Tushare 数据源
+
 # AI 集成（Phase 2）
 anthropic>=0.7.0
 openai>=1.0.0
