@@ -51,9 +51,20 @@ def screen(stock_codes, framework, detail):
     示例：
         stock-analyzer screen 600519
         stock-analyzer screen 600519 000858 002594
+        stock-analyzer screen 600519,000858,002594
         stock-analyzer screen 600519 --framework quality_stock_screener
     """
     console.print(f"\n[bold cyan]使用筛选框架: {framework}[/bold cyan]\n")
+
+    # 支持逗号分隔的股票代码（如：600519,000858）
+    expanded_codes = []
+    for code in stock_codes:
+        if ',' in code:
+            expanded_codes.extend(code.split(','))
+        else:
+            expanded_codes.append(code)
+
+    stock_codes = [code.strip() for code in expanded_codes if code.strip()]
 
     # 加载筛选框架
     try:
@@ -130,9 +141,20 @@ def analyze(stock_codes, framework, detail):
     示例：
         stock-analyzer analyze 600519
         stock-analyzer analyze 600519 000858
+        stock-analyzer analyze 600519,000858,002594
         stock-analyzer analyze 600519 --framework growth_investing
     """
     console.print(f"\n[bold cyan]使用分析框架: {framework}[/bold cyan]\n")
+
+    # 支持逗号分隔的股票代码（如：600519,000858）
+    expanded_codes = []
+    for code in stock_codes:
+        if ',' in code:
+            expanded_codes.extend(code.split(','))
+        else:
+            expanded_codes.append(code)
+
+    stock_codes = [code.strip() for code in expanded_codes if code.strip()]
 
     # 加载分析框架
     try:
