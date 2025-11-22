@@ -336,32 +336,47 @@ def get_financial_data(session, stock_id, years=5):
         return None, None
 
     def metric_to_dict(metric):
+        """将数据库FinancialMetric对象转换为字典（字段名与框架配置匹配）"""
+        # 基础字段
+        revenue_yoy = float(metric.revenue_yoy) if metric.revenue_yoy else None
+        profit_yoy = float(metric.net_profit_yoy) if metric.net_profit_yoy else None
+
         return {
             'report_date': metric.report_date,
+            # 基础财务数据
             'revenue': float(metric.revenue) if metric.revenue else None,
             'net_profit': float(metric.net_profit) if metric.net_profit else None,
             'gross_margin': float(metric.gross_margin) if metric.gross_margin else None,
             'net_margin': float(metric.net_margin) if metric.net_margin else None,
             'roe': float(metric.roe) if metric.roe else None,
             'roa': float(metric.roa) if metric.roa else None,
-            'revenue_growth_rate_yoy': float(metric.revenue_yoy) if metric.revenue_yoy else None,
+            # 增长率（提供两种字段名以兼容不同框架）
+            'revenue_growth_rate': revenue_yoy,  # 框架配置使用的字段名
+            'revenue_growth_rate_yoy': revenue_yoy,  # 完整字段名
             'revenue_growth_rate_qoq': float(metric.revenue_qoq) if metric.revenue_qoq else None,
-            'profit_growth_rate_yoy': float(metric.net_profit_yoy) if metric.net_profit_yoy else None,
+            'profit_growth_rate': profit_yoy,  # 框架配置使用的字段名
+            'profit_growth_rate_yoy': profit_yoy,  # 完整字段名
             'profit_growth_rate_qoq': float(metric.net_profit_qoq) if metric.net_profit_qoq else None,
+            # 资产负债
             'total_assets': float(metric.total_assets) if metric.total_assets else None,
             'total_liabilities': float(metric.total_liabilities) if metric.total_liabilities else None,
             'total_equity': float(metric.total_equity) if metric.total_equity else None,
             'debt_to_asset_ratio': float(metric.asset_liability_ratio) if metric.asset_liability_ratio else None,
             'current_ratio': float(metric.current_ratio) if metric.current_ratio else None,
+            # 现金流
             'operating_cash_flow': float(metric.operating_cash_flow) if metric.operating_cash_flow else None,
             'operating_cashflow_ratio': float(metric.ocf_to_net_profit) if metric.ocf_to_net_profit else None,
+            # 估值
             'pe_ratio': float(metric.pe_ratio) if metric.pe_ratio else None,
             'pb_ratio': float(metric.pb_ratio) if metric.pb_ratio else None,
             'peg_ratio': float(metric.peg_ratio) if metric.peg_ratio else None,
+            # 运营效率
             'asset_turnover': float(metric.asset_turnover) if metric.asset_turnover else None,
+            # 分红数据
             'dividend_paid': metric.extra_metrics.get('dividend_paid', 0) if metric.extra_metrics else 0,
             'dividend_payout_ratio': metric.extra_metrics.get('dividend_payout_ratio', 0) if metric.extra_metrics else 0,
             'dividend_yield': metric.extra_metrics.get('dividend_yield', 0) if metric.extra_metrics else 0,
+            # 市值
             'market_cap': metric.extra_metrics.get('market_cap', 0) if metric.extra_metrics else 0,
         }
 

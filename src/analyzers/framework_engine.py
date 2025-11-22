@@ -294,12 +294,17 @@ class FrameworkEngine:
             # 解析条件中的指标名
             # 简单的字符串解析，假设条件格式为 "metric_name > value"
             try:
-                # 构建命名空间，包含所有指标
-                namespace = dict(metrics)
+                # 构建命名空间，包含所有指标（过滤None值以避免比较错误）
+                namespace = {k: v for k, v in metrics.items() if v is not None}
 
-                if self._evaluate_condition(condition, None) or eval(condition, {"__builtins__": {}}, namespace):
+                # 直接评估条件（如果条件中引用的指标不存在或为None，跳过）
+                if eval(condition, {"__builtins__": {}}, namespace):
                     alert_message = f"[{alert_config['level']}] {alert_config['message']}"
                     risk_alerts.append(alert_message)
+            except (KeyError, NameError, TypeError) as e:
+                # KeyError/NameError: 指标不存在，TypeError: None值比较
+                # 这些情况下跳过该风险检查
+                pass
             except Exception as e:
                 self.logger.warning(f"风险检查失败: {condition}, 错误: {e}")
                 continue
