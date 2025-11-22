@@ -201,7 +201,12 @@ class ScreeningEngine:
 
         criteria_results = []
 
-        for criterion in category['criteria']:
+        # 处理空的criteria列表（例如风险控制分类暂无检查项）
+        criteria = category.get('criteria', [])
+        if criteria is None:
+            criteria = []
+
+        for criterion in criteria:
             result = self._check_criterion(
                 criterion,
                 current_metrics,
@@ -210,7 +215,10 @@ class ScreeningEngine:
             criteria_results.append(result)
 
         # 判断该分类是否通过
-        if required:
+        if not criteria_results:
+            # 如果没有检查项，非必需分类自动通过，必需分类也通过
+            category_passed = True
+        elif required:
             # 必须全部通过
             category_passed = all(c.passed for c in criteria_results)
         else:
