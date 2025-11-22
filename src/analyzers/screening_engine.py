@@ -256,6 +256,14 @@ class ScreeningEngine:
             )
         elif check_type == 'rating':
             return self._check_rating(criterion, current_metrics)
+        elif check_type == 'historical_percentile':
+            return self._check_historical_percentile(
+                criterion, current_metrics, historical_metrics
+            )
+        elif check_type == 'volatility':
+            return self._check_volatility(criterion, historical_metrics)
+        elif check_type == 'valuation_expansion':
+            return self._check_valuation_expansion(criterion, historical_metrics)
         else:
             self.logger.warning(f"未知的检查类型: {check_type}")
             return CriterionResult(
@@ -631,6 +639,257 @@ class ScreeningEngine:
                 suggestions.append(f"  • {criterion.name}: {criterion.reason}")
 
         return suggestions
+
+    def _check_historical_percentile(
+        self,
+        criterion: Dict,
+        current_metrics: Dict[str, Any],
+        historical_metrics: Optional[List[Dict[str, Any]]]
+    ) -> CriterionResult:
+        """
+        检查当前值与历史百分位的关系
+        例如：当前PE < 5年PE中位数
+        """
+        metric_name = criterion['metric']
+        operator = criterion['operator']
+        percentile_type = criterion.get('percentile_type', 'median')
+        years = criterion.get('years', 5)
+
+        if not historical_metrics or len(historical_metrics) < years:
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=None,
+                threshold=None,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason=f"历史数据不足（需要{years}年）"
+            )
+
+        # 获取当前值
+        current_value = current_metrics.get(metric_name)
+        if current_value is None:
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=None,
+                threshold=None,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason="当前数据缺失"
+            )
+
+        # 收集历史值
+        historical_values = []
+        for hist_data in historical_metrics[:years]:
+            value = hist_data.get(metric_name)
+            if value is not None and value > 0:  # 排除负值和None
+                historical_values.append(value)
+
+        if len(historical_values) < 3:  # 至少需要3个历史点
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=current_value,
+                threshold=None,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason=f"有效历史数据不足（仅{len(historical_values)}个）"
+            )
+
+        # 计算百分位值
+        import statistics
+        if percentile_type == 'median':
+            threshold_value = statistics.median(historical_values)
+        elif percentile_type == 'mean':
+            threshold_value = statistics.mean(historical_values)
+        elif percentile_type == '25th':
+            historical_values.sort()
+            threshold_value = historical_values[len(historical_values) // 4]
+        elif percentile_type == '75th':
+            historical_values.sort()
+            threshold_value = historical_values[3 * len(historical_values) // 4]
+        else:
+            threshold_value = statistics.median(historical_values)
+
+        # 比较
+        passed = self._compare(current_value, operator, threshold_value)
+        relative = current_value / threshold_value if threshold_value > 0 else 0
+        reason = f"当前: {self._format_value(current_value, metric_name)}, " \
+                f"{years}年{percentile_type}: {self._format_value(threshold_value, metric_name)}, " \
+                f"相对位置: {relative:.2f}x"
+
+        return CriterionResult(
+            name=criterion['name'],
+            description=criterion['description'],
+            passed=passed,
+            actual_value=current_value,
+            threshold=threshold_value,
+            operator=operator,
+            importance=criterion.get('importance', 'medium'),
+            reason=reason
+        )
+
+    def _check_volatility(
+        self,
+        criterion: Dict,
+        historical_metrics: Optional[List[Dict[str, Any]]]
+    ) -> CriterionResult:
+        """
+        检查波动率（变异系数）
+        波动率 = 标准差 / 平均值
+        """
+        metric_name = criterion['metric']
+        threshold = criterion['threshold']
+        operator = criterion['operator']
+        years = criterion.get('years', 5)
+
+        if not historical_metrics or len(historical_metrics) < years:
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=None,
+                threshold=threshold,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason=f"历史数据不足（需要{years}年）"
+            )
+
+        # 收集历史值
+        values = []
+        for hist_data in historical_metrics[:years]:
+            value = hist_data.get(metric_name)
+            if value is not None and value > 0:
+                values.append(value)
+
+        if len(values) < 3:
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=None,
+                threshold=threshold,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason=f"有效数据不足（仅{len(values)}个）"
+            )
+
+        # 计算波动率
+        import statistics
+        mean_value = statistics.mean(values)
+        if mean_value == 0:
+            volatility = 999  # 平均值为0，波动率设为极大值
+        else:
+            std_dev = statistics.stdev(values) if len(values) > 1 else 0
+            volatility = std_dev / mean_value
+
+        # 比较
+        passed = self._compare(volatility, operator, threshold)
+        reason = f"{years}年波动率: {volatility:.1%}, " \
+                f"均值: {self._format_value(mean_value, metric_name)}, " \
+                f"标准差: {std_dev:.2f}"
+
+        return CriterionResult(
+            name=criterion['name'],
+            description=criterion['description'],
+            passed=passed,
+            actual_value=volatility,
+            threshold=threshold,
+            operator=operator,
+            importance=criterion.get('importance', 'medium'),
+            reason=reason
+        )
+
+    def _check_valuation_expansion(
+        self,
+        criterion: Dict,
+        historical_metrics: Optional[List[Dict[str, Any]]]
+    ) -> CriterionResult:
+        """
+        检查估值扩张率
+        估值扩张率 = 市值CAGR / 净利润CAGR
+        """
+        market_cap_metric = criterion.get('market_cap_metric', 'market_cap')
+        profit_metric = criterion.get('profit_metric', 'net_profit')
+        threshold = criterion['threshold']
+        operator = criterion['operator']
+        years = criterion.get('years', 5)
+
+        if not historical_metrics or len(historical_metrics) < years:
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=None,
+                threshold=threshold,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason=f"历史数据不足（需要{years}年）"
+            )
+
+        # 获取起始和结束值
+        start_market_cap = historical_metrics[years - 1].get(market_cap_metric)
+        end_market_cap = historical_metrics[0].get(market_cap_metric)
+        start_profit = historical_metrics[years - 1].get(profit_metric)
+        end_profit = historical_metrics[0].get(profit_metric)
+
+        # 检查数据有效性
+        if None in [start_market_cap, end_market_cap, start_profit, end_profit]:
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=None,
+                threshold=threshold,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason="市值或利润数据缺失"
+            )
+
+        if start_market_cap <= 0 or start_profit <= 0:
+            return CriterionResult(
+                name=criterion['name'],
+                description=criterion['description'],
+                passed=False,
+                actual_value=None,
+                threshold=threshold,
+                operator=operator,
+                importance=criterion.get('importance', 'medium'),
+                reason="起始数据无效（≤0）"
+            )
+
+        # 计算CAGR
+        market_cap_cagr = (end_market_cap / start_market_cap) ** (1 / years) - 1
+        profit_cagr = (end_profit / start_profit) ** (1 / years) - 1
+
+        # 计算估值扩张率
+        if profit_cagr <= 0:
+            # 利润负增长，估值扩张率无意义
+            expansion_ratio = 999  # 设为极大值，表示不合格
+            reason = f"利润负增长（{profit_cagr:.1%}），估值扩张率无意义"
+        else:
+            expansion_ratio = market_cap_cagr / profit_cagr
+            reason = f"市值CAGR: {market_cap_cagr:.1%}, " \
+                    f"利润CAGR: {profit_cagr:.1%}, " \
+                    f"扩张率: {expansion_ratio:.2f}x"
+
+        # 比较
+        passed = self._compare(expansion_ratio, operator, threshold)
+
+        return CriterionResult(
+            name=criterion['name'],
+            description=criterion['description'],
+            passed=passed,
+            actual_value=expansion_ratio,
+            threshold=threshold,
+            operator=operator,
+            importance=criterion.get('importance', 'medium'),
+            reason=reason
+        )
 
     def _format_value(self, value: Any, metric_name: str) -> str:
         """格式化数值显示"""

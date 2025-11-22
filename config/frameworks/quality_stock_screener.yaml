@@ -34,28 +34,44 @@ categories:
         importance: "critical"
 
       # 1.2 成长能力
-      - name: "最近季度营收增速 > 20%"
-        description: "营收保持高增长"
+      - name: "最近季度营收增速 > 15%"
+        description: "营收保持增长"
         check_type: "latest_quarter"
         metric: "revenue_growth_rate_qoq"
         operator: ">"
-        threshold: 0.20
+        threshold: 0.15
         importance: "high"
 
-      - name: "最近季度净利润增速 > 20%"
-        description: "利润保持高增长"
+      - name: "最近季度净利润增速 > 15%"
+        description: "利润保持增长"
         check_type: "latest_quarter"
         metric: "profit_growth_rate_qoq"
         operator: ">"
-        threshold: 0.20
+        threshold: 0.15
         importance: "high"
 
-      - name: "5年净利润复合增长率 > 24%"
+      - name: "年度营收增速 > 15%"
+        description: "年度营收稳健增长"
+        check_type: "simple"
+        metric: "revenue_growth_rate_yoy"
+        operator: ">"
+        threshold: 0.15
+        importance: "high"
+
+      - name: "年度净利润增速 > 15%"
+        description: "年度利润稳健增长"
+        check_type: "simple"
+        metric: "profit_growth_rate_yoy"
+        operator: ">"
+        threshold: 0.15
+        importance: "high"
+
+      - name: "5年净利润复合增长率 > 15%"
         description: "长期成长能力强"
         check_type: "cagr"
         metric: "net_profit"
         operator: ">"
-        threshold: 0.24
+        threshold: 0.15
         years: 5
         importance: "high"
 
@@ -69,17 +85,18 @@ categories:
         years: 3
         importance: "medium"
 
-      - name: "最近年度分红率 > 30%"
-        description: "分红比例合理"
-        check_type: "simple"
+      - name: "连续3年分红率 > 30%"
+        description: "持续高分红比例"
+        check_type: "consecutive_years"
         metric: "dividend_payout_ratio"
         operator: ">"
         threshold: 0.30
+        years: 3
         importance: "medium"
 
   # 二、估值与性价比
   - name: "估值与性价比"
-    description: "市值规模、估值水平、成长性价比"
+    description: "市值规模、估值水平、成长性价比、估值历史位置"
     required: true
 
     criteria:
@@ -107,6 +124,34 @@ categories:
         threshold: 1.5
         importance: "high"
 
+      - name: "当前PE < 5年PE中位数"
+        description: "估值处于历史较低位置"
+        check_type: "historical_percentile"
+        metric: "pe_ratio"
+        operator: "<"
+        percentile_type: "median"
+        years: 5
+        importance: "high"
+
+      - name: "PE波动率 < 30%"
+        description: "盈利稳定，估值可靠"
+        check_type: "volatility"
+        metric: "pe_ratio"
+        operator: "<"
+        threshold: 0.30
+        years: 5
+        importance: "high"
+
+      - name: "估值扩张率 ≤ 1.2"
+        description: "避免估值泡沫，增长主要来自业绩"
+        check_type: "valuation_expansion"
+        market_cap_metric: "market_cap"
+        profit_metric: "net_profit"
+        operator: "<="
+        threshold: 1.2
+        years: 5
+        importance: "critical"
+
       - name: "股息率 > 十年期国债收益率"
         description: "股息回报有吸引力"
         check_type: "compare_benchmark"
@@ -116,38 +161,17 @@ categories:
         benchmark_value: 0.025  # 可配置，默认2.5%
         importance: "medium"
 
-  # 三、风险控制体系
+  # 三、风险控制体系（简化版）
   - name: "风险控制"
-    description: "负面筛选、ESG评级"
-    required: true
+    description: "基础风险检查"
+    required: false  # 设为非必需，因为暂无具体检查项
 
     criteria:
-      - name: "无重大违规历史"
-        description: "过去5年无重大违规记录"
-        check_type: "negative_screen"
-        metric: "violations"
-        operator: "=="
-        threshold: 0
-        years: 5
-        importance: "critical"
-
-      - name: "无财务造假历史"
-        description: "过去5年无财务造假记录"
-        check_type: "negative_screen"
-        metric: "fraud"
-        operator: "=="
-        threshold: 0
-        years: 5
-        importance: "critical"
-
-      - name: "ESG评级 ≥ BBB"
-        description: "ESG评级达标（MSCI或Wind）"
-        check_type: "rating"
-        metric: "esg_rating"
-        operator: ">="
-        threshold: "BBB"
-        importance: "medium"
-        rating_scale: ["CCC", "B", "BB", "BBB", "A", "AA", "AAA"]
+      # 暂时移除违规记录和ESG评级检查
+      # 可在后续根据数据可获得性添加：
+      # - 大股东减持检查
+      # - 限售解禁检查
+      # - ST状态检查
 
 # 行业特定调整（可选）
 industry_adjustments:
