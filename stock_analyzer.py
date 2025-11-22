@@ -389,24 +389,23 @@ def print_analysis_result(result, stock_name):
     table = Table(title="各维度得分", box=box.ROUNDED)
     table.add_column("维度", style="cyan")
     table.add_column("得分", justify="right", style="yellow")
-    table.add_column("权重", justify="right")
-    table.add_column("评价", style="green")
+    table.add_column("满分", justify="right")
+    table.add_column("得分率", style="green")
 
     for category in result.category_scores:
         table.add_row(
-            category.name_zh,
+            category.name,
             f"{category.score:.1f}",
-            f"{category.weight*100:.0f}%",
-            category.comment
+            f"{category.max_score:.1f}",
+            f"{category.score_percentage:.1f}%"
         )
 
     console.print(table)
 
     # 投资建议
-    if result.recommendations:
+    if hasattr(result, 'recommendation') and result.recommendation:
         console.print("\n[bold blue]💡 投资建议:[/bold blue]")
-        for rec in result.recommendations:
-            console.print(f"  {rec}")
+        console.print(f"  {result.recommendation}")
 
     console.print()
 
