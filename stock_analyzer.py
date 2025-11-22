@@ -22,8 +22,70 @@ from src.database.models import Stock, FinancialMetric, FinancialReport
 from src.analyzers import load_framework, load_screener
 from src.services import MarketDataService
 from src.data_sources import MockDataSource
+from src.services.data_collector import DataCollector
 
 console = Console()
+
+
+def ensure_data_available(stock_code: str, skip_fetch: bool = False, years: int = 5) -> bool:
+    """
+    确保股票数据可用，如果不可用则尝试采集
+
+    Args:
+        stock_code: 股票代码
+        skip_fetch: 是否跳过数据采集
+        years: 采集年限
+
+    Returns:
+        bool: 数据是否可用
+    """
+    # 如果指定跳过采集，直接返回
+    if skip_fetch:
+        return True
+
+    # 创建数据采集器
+    collector = DataCollector()
+
+    # 检查数据完整性
+    report = collector.check_data_completeness(
+        stock_code,
+        years=years,
+        report_types=['annual']  # 分析主要用年报数据
+    )
+
+    # 如果数据完整，不需要采集
+    if report.is_complete:
+        return True
+
+    # 数据不完整，显示完整性报告
+    console.print(f"\n[yellow]⚠ 股票 {stock_code} 的数据不完整[/yellow]")
+    collector.display_completeness_report(report)
+
+    # 询问用户是否采集
+    confirmed = collector.ask_user_to_collect(stock_code, report)
+
+    if not confirmed or confirmed == 'skip':
+        console.print(f"[dim]跳过数据采集，将使用现有数据（可能不完整）[/dim]\n")
+        return True  # 仍然返回 True，让用户可以尝试用不完整的数据分析
+
+    # 执行数据采集
+    is_incremental = (confirmed == 'incremental')
+
+    console.print(f"\n[cyan]开始采集 {stock_code} 的财务数据...[/cyan]\n")
+
+    success = collector.collect_stock_data(
+        stock_code,
+        years=years,
+        report_types=['annual'],
+        incremental=is_incremental
+    )
+
+    if success:
+        console.print(f"\n[green]✓ 数据采集完成[/green]\n")
+        return True
+    else:
+        console.print(f"\n[yellow]⚠ 数据采集失败，将使用现有数据（可能不完整）[/yellow]\n")
+        return True  # 即使采集失败，也允许继续分析
 
 
 @click.group()
@@ -44,7 +106,9 @@ def cli():
               help='筛选框架名称（默认：quality_stock_screener）')
 @click.option('--detail/--no-detail', default=True,
               help='是否显示详细信息')
-def screen(stock_codes, framework, detail):
+@click.option('--skip-fetch', is_flag=True,
+              help='跳过自动数据采集')
+def screen(stock_codes, framework, detail, skip_fetch):
     """
     筛选股票（Pass/Fail）
 
@@ -53,6 +117,7 @@ def screen(stock_codes, framework, detail):
         stock-analyzer screen 600519 000858 002594
         stock-analyzer screen 600519,000858,002594
         stock-analyzer screen 600519 --framework quality_stock_screener
+        stock-analyzer screen 600519 --skip-fetch  # 跳过自动采集
     """
     console.print(f"\n[bold cyan]使用筛选框架: {framework}[/bold cyan]\n")
 
@@ -76,6 +141,9 @@ def screen(stock_codes, framework, detail):
     results = []
 
     for stock_code in stock_codes:
+        # 确保数据可用
+        ensure_data_available(stock_code, skip_fetch=skip_fetch)
+
         result = screen_single_stock(stock_code, screener, detail)
         if result:
             results.append(result)
@@ -134,7 +202,9 @@ def screen_single_stock(stock_code, screener, detail=True):
               help='分析框架名称（默认：value_investing）')
 @click.option('--detail/--no-detail', default=True,
               help='是否显示详细信息')
-def analyze(stock_codes, framework, detail):
+@click.option('--skip-fetch', is_flag=True,
+              help='跳过自动数据采集')
+def analyze(stock_codes, framework, detail, skip_fetch):
     """
     分析股票（评分0-100）
 
@@ -143,6 +213,7 @@ def analyze(stock_codes, framework, detail):
         stock-analyzer analyze 600519 000858
         stock-analyzer analyze 600519,000858,002594
         stock-analyzer analyze 600519 --framework growth_investing
+        stock-analyzer analyze 600519 --skip-fetch  # 跳过自动采集
     """
     console.print(f"\n[bold cyan]使用分析框架: {framework}[/bold cyan]\n")
 
@@ -166,6 +237,9 @@ def analyze(stock_codes, framework, detail):
     results = []
 
     for stock_code in stock_codes:
+        # 确保数据可用
+        ensure_data_available(stock_code, skip_fetch=skip_fetch)
+
         result = analyze_single_stock(stock_code, analyzer, detail)
         if result:
             results.append(result)
